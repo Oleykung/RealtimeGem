@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Granado Espada M - Realtime Boss Manager</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{background:#0f1117;color:#e5e7eb;font-family:'Sarabun',sans-serif}
+.card{background:#1a1e2a;border:1px solid #2a2f45;border-radius:12px}
+.soon{border-color:#f59e0b}.alive{border-color:#10b981}.critical{animation:pulse 1s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.modal-bg{background:rgba(0,0,0,0.8);backdrop-filter:blur(4px)}
+input,select,textarea{background:#0f1117;border:1px solid #2a2f45;color:#e5e7eb}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot-green{background:#10b981;box-shadow:0 0 8px #10b981}
+.dot-red{background:#ef4444}
+.dot-yellow{background:#f59e0b;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+</style>
+</head>
+<body class="min-h-screen p-4">
+<div class="max-w-7xl mx-auto">
+<div class="flex flex-wrap justify-between gap-4 mb-4">
+<div><h1 class="text-2xl md:text-3xl font-bold">⚔️ Granado Espada M <span class="text-indigo-400">Realtime</span> <span class="text-xs bg-red-600 px-2 py-1 rounded">LIVE</span></h1><p class="text-xs text-gray-400">Discord ↔ Web Realtime Sync | พิมพ์ชื่อบอสได้เลย ไม่ต้องเลือกรายชื่อตายตัว</p><p id="liveTime" class="font-mono text-yellow-300 text-sm"></p></div>
+<div class="flex flex-wrap gap-2">
+<button id="notifBtn" class="px-3 py-2 bg-indigo-600 rounded text-xs">🔔 แจ้งเตือน</button>
+<button id="addBossBtn" class="px-3 py-2 bg-blue-600 rounded text-xs">➕ เพิ่มบอส</button>
+<button id="resetAll" class="px-3 py-2 bg-red-700 rounded text-xs">♻️ Reset ทั้งหมด</button>
+</div>
+</div>
+
+<div class="card p-3 mb-4 flex flex-wrap gap-2 items-center text-xs">
+<span>Bot API:</span><input id="apiUrl" class="flex-1 min-w-[200px] bg-gray-900 border border-gray-700 rounded px-2 py-1" value="http://localhost:8080">
+<span id="wsStatus" class="bg-gray-800 px-2 py-1 rounded"><span class="dot dot-red"></span> กำลังเชื่อมต่อ...</span>
+<span id="status" class="bg-gray-800 px-2 py-1 rounded">🔴 ไม่เชื่อมต่อ</span>
+<label><input type="checkbox" id="sound" checked> 🔊</label>
+<span class="ml-auto">บอส: <b id="totalBoss">0</b> | WS Clients: <b id="wsClients">0</b> | <span class="text-green-400">⚡ Realtime</span></span>
+</div>
+
+<div class="flex gap-2 mb-4">
+<button onclick="switchTab('tracker')" id="tab-tracker" class="px-4 py-2 bg-indigo-600 rounded text-sm">⏳ ติดตามบอส</button>
+<button onclick="switchTab('list')" id="tab-list" class="px-4 py-2 bg-gray-800 rounded text-sm">📋 รายการบอส / แก้ไข</button>
+</div>
+
+<div id="next5" class="card p-3 mb-4 text-sm"></div>
+<div id="tab-tracker-content"><div id="grid" class="space-y-6"></div></div>
+<div id="tab-list-content" class="hidden">
+<div class="card p-3">
+<div class="flex justify-between mb-3"><h3 class="font-bold">📋 รายการบอสทั้งหมด - Realtime Edit</h3><input id="searchBoss" placeholder="ค้นหาบอส..." class="px-3 py-1 rounded text-sm w-48"></div>
+<div class="overflow-x-auto">
+<table class="w-full text-xs">
+<thead class="text-gray-400 border-b border-gray-700"><tr><th class="text-left p-2">ชื่อไทย / อังกฤษ</th><th class="text-left p-2">เมือง / แมพ</th><th class="text-left p-2">เกิด</th><th class="text-left p-2">เวลา</th><th class="text-left p-2">จัดการ Realtime</th></tr></thead>
+<tbody id="bossTable"></tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div class="card p-3 mt-6"><h3 class="text-sm font-bold">🔔 Log Realtime</h3><div id="log" class="text-xs text-gray-400 max-h-32 overflow-y-auto"></div></div>
+</div>
+
+<div id="modal" class="fixed inset-0 modal-bg hidden items-center justify-center z-50 p-4">
+<div class="card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+<h3 id="modalTitle" class="font-bold text-lg mb-4">แก้ไขบอส</h3>
+<div class="space-y-3 text-sm">
+<div><label class="text-xs text-gray-400">ID (อังกฤษ ไม่มีช่องว่าง)</label><input id="m_id" class="w-full px-3 py-2 rounded"></div>
+<div class="grid grid-cols-2 gap-3"><div><label class="text-xs text-gray-400">ชื่อไทย</label><input id="m_th" class="w-full px-3 py-2 rounded"></div><div><label class="text-xs text-gray-400">ชื่ออังกฤษ</label><input id="m_en" class="w-full px-3 py-2 rounded"></div></div>
+<div class="grid grid-cols-2 gap-3"><div><label class="text-xs text-gray-400">เมือง</label><select id="m_city" class="w-full px-3 py-2 rounded"><option>Reboldoeux</option><option>The Port of Coimbra</option><option>City of Auch</option><option>World Boss - ทุกเมือง</option></select></div><div><label class="text-xs text-gray-400">ประเภท</label><input id="m_type" class="w-full px-3 py-2 rounded" placeholder="Field Boss / Dungeon Boss"></div></div>
+<div><label class="text-xs text-gray-400">แผนที่เกิด</label><input id="m_map" class="w-full px-3 py-2 rounded"></div>
+<div class="grid grid-cols-2 gap-3"><div><label class="text-xs text-gray-400">Respawn (นาที) 0=เวลาตายตัว</label><input id="m_respawn" type="number" class="w-full px-3 py-2 rounded"></div><div><label class="text-xs text-gray-400">เวลาตายตัว (คั่นด้วย ,) เช่น 12:00,19:30</label><input id="m_fixed" class="w-full px-3 py-2 rounded"></div></div>
+</div>
+<div class="flex gap-2 mt-6">
+<button id="saveBoss" class="flex-1 bg-indigo-600 py-2 rounded">💾 บันทึก + Realtime Sync</button>
+<button onclick="closeModal()" class="flex-1 bg-gray-700 py-2 rounded">ยกเลิก</button>
+</div>
+</div>
+</div>
+
+<div id="modalTime" class="fixed inset-0 modal-bg hidden items-center justify-center z-50 p-4">
+<div class="card p-6 w-full max-w-sm">
+<h3 class="font-bold mb-4">⏰ ตั้งเวลาเกิดบอส (Realtime)</h3>
+<p id="timeBossName" class="text-sm text-gray-400 mb-3"></p>
+<div class="space-y-3 text-sm">
+<label class="text-xs">วันที่ + เวลาเกิด (เวลไทย)</label>
+<input id="setTimeInput" type="datetime-local" class="w-full px-3 py-2 rounded">
+<div class="flex gap-2">
+<button onclick="setQuickTime(10)" class="flex-1 bg-gray-800 py-1 rounded text-xs">+10 นาที</button>
+<button onclick="setQuickTime(60)" class="flex-1 bg-gray-800 py-1 rounded text-xs">+1 ชม.</button>
+<button onclick="setQuickTime(120)" class="flex-1 bg-gray-800 py-1 rounded text-xs">+2 ชม.</button>
+</div>
+</div>
+<div class="flex gap-2 mt-6">
+<button id="saveTime" class="flex-1 bg-green-600 py-2 rounded">✅ ตั้งเวลา + Sync ทันที</button>
+<button onclick="closeTimeModal()" class="flex-1 bg-gray-700 py-2 rounded">ยกเลิก</button>
+</div>
+</div>
+</div>
+
+<script>
+let BOSSES = [{"id": "dilos_latem", "name_th": "ดิลอส ลาเท็ม", "name_en": "Dilos Latem", "city": "Reboldoeux", "map": "Al Quelt Moreza (Dungeon) ชั้น 7-17 / ห้องบอสลับ", "type": "Dungeon Boss", "respawn_min": 120, "fixed_times": []}, {"id": "hill_giant", "name_th": "ฮิลล์ ไจแอนท์", "name_en": "Hill Giant", "city": "Reboldoeux", "map": "Rion Prairie / Ferruccio Junction / จุดวาร์ปกลางทุ่ง", "type": "Field Boss", "respawn_min": 120, "fixed_times": []}, {"id": "nest_head_giant", "name_th": "เนสท์-เฮด ไจแอนท์", "name_en": "Nest-Head Giant", "city": "Reboldoeux", "map": "Rion Prairie เหนือ / Forest of Chery / ริมผา", "type": "Field Boss Lv.30", "respawn_min": 180, "fixed_times": []}, {"id": "queen_goblin", "name_th": "ควีน ก็อบลิน", "name_en": "Queen Goblin", "city": "Reboldoeux", "map": "Al Quelt Moreza ทางออก / ชายป่า Reboldoeux", "type": "Field Boss Lv.25", "respawn_min": 90, "fixed_times": []}, {"id": "pappus_alpha", "name_th": "ปาปัส อัลฟ่า", "name_en": "Pappus Alpha", "city": "Reboldoeux", "map": "Ferruccio Underground / Ferruccio Factory", "type": "Field Boss Lv.35", "respawn_min": 150, "fixed_times": []}, {"id": "treasure_golem", "name_th": "เทรเชอร์ โกเล็ม", "name_en": "Treasure Golem", "city": "The Port of Coimbra", "map": "Tetra Ruins / Secret Tetra ชั้น 24-34 / ห้องสมบัติ", "type": "Dungeon Boss", "respawn_min": 180, "fixed_times": []}, {"id": "kraken", "name_th": "คราเคน ยักษ์", "name_en": "Kraken", "city": "The Port of Coimbra", "map": "Tetra Coast / ชายฝั่ง Coimbra / ท่าเรือร้าง", "type": "Field Boss Lv.45", "respawn_min": 180, "fixed_times": []}, {"id": "tetra_commander", "name_th": "เตตร้า คอมมานเดอร์", "name_en": "Tetra Commander", "city": "The Port of Coimbra", "map": "Tetra Ruins Entrance / ทางเข้า Tetra", "type": "Field Boss Lv.40", "respawn_min": 150, "fixed_times": []}, {"id": "naga_queen", "name_th": "นากา ควีน", "name_en": "Naga Queen", "city": "The Port of Coimbra", "map": "Tetra Underground Lake / บ่อน้ำใต้ดิน Tetra", "type": "Field Boss Lv.42", "respawn_min": 120, "fixed_times": []}, {"id": "giant_crab", "name_th": "ไจแอนท์ แครบ", "name_en": "Giant Crab", "city": "The Port of Coimbra", "map": "Coimbra Beach / ชายหาด Coimbra", "type": "Field Boss Lv.38", "respawn_min": 90, "fixed_times": []}, {"id": "chimera", "name_th": "ไคเมร่า", "name_en": "Chimera", "city": "City of Auch", "map": "Chaos Chimera Dungeon / ดันเจี้ยนไคเมร่า", "type": "Dungeon Boss", "respawn_min": 240, "fixed_times": []}, {"id": "dr_torsche", "name_th": "ดร.ทอร์เช่", "name_en": "Dr. Torsche", "city": "City of Auch", "map": "Dr. Torsche's Mansion / Savage Garden / คฤหาสน์ทอร์เช่", "type": "Dungeon Boss", "respawn_min": 240, "fixed_times": []}, {"id": "big_cockatrice", "name_th": "บิ๊ก ค็อกคาไทรซ์", "name_en": "Big Cockatrice", "city": "City of Auch", "map": "El Lago de Tres Hermanas / El Tejado Verde / ริมทะเลสาบ", "type": "Field Boss Lv.69", "respawn_min": 180, "fixed_times": []}, {"id": "captain_scharf", "name_th": "กัปตัน ชาร์ฟเฟนเบอร์เกอร์", "name_en": "Captain Scharffenberger", "city": "City of Auch", "map": "El Tejado Verde / จุดชมวิว Auch / ยอดเขา", "type": "Field Boss Lv.69", "respawn_min": 180, "fixed_times": []}, {"id": "merman_chief", "name_th": "เมอร์แมน ชีฟเทน", "name_en": "Merman Chieftain", "city": "City of Auch", "map": "Thueringen Lakeside / El Lago ฝั่งตะวันตก", "type": "Field Boss Lv.63", "respawn_min": 120, "fixed_times": []}, {"id": "stone_cortes", "name_th": "สโตน คอร์เทส", "name_en": "Stone Cortes", "city": "City of Auch", "map": "Clock Tower 2nd Floor / หอนาฬิกาชั้น 2 (แมพใหม่ Byron)", "type": "Field Boss Lv.75", "respawn_min": 240, "fixed_times": []}, {"id": "pirate_king_el_lago", "name_th": "ไพเรทคิง แห่งเอล ลาโก", "name_en": "Pirate King of El Lago", "city": "City of Auch", "map": "El Lago de Tres Hermanas กลางทะเลสาบ / เกาะโจรสลัด", "type": "Field Boss Lv.65", "respawn_min": 180, "fixed_times": []}, {"id": "chaos_cub", "name_th": "เคออส คับ", "name_en": "Chaos Cub", "city": "City of Auch", "map": "El Tejado Verde Depths / ถ้ำลึก Auch / ป่า Chaos", "type": "Field Boss Lv.70", "respawn_min": 210, "fixed_times": []}, {"id": "witch_bondage", "name_th": "วิทช์ ออฟ บอนเดจ", "name_en": "Witch of Bondage", "city": "World Boss - ทุกเมือง", "map": "World Boss Arena / ลานบอสโลก (วาร์ปจากทุกเมือง)", "type": "World Boss", "respawn_min": 0, "fixed_times": ["12:00", "19:30", "22:00"]}];
+let timers = {};
+let currentEditId = null;
+let currentTimeId = null;
+let ws = null;
+let wsReconnectTimer = null;
+
+function nowTH(){return new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Bangkok"}));}
+function save(){localStorage.setItem('gem_timers',JSON.stringify(timers));}
+function load(){try{timers=JSON.parse(localStorage.getItem('gem_timers')||'{}');}catch{timers={};}}
+async function apiGet(p){try{const b=document.getElementById('apiUrl').value.replace(/\/$/,'');const r=await fetch(b+p);return await r.json();}catch{return null;}}
+async function apiPost(p,body){try{const b=document.getElementById('apiUrl').value.replace(/\/$/,'');const r=await fetch(b+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return await r.json();}catch{return null;}}
+async function apiPut(p,body){try{const b=document.getElementById('apiUrl').value.replace(/\/$/,'');const r=await fetch(b+p,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return await r.json();}catch{return null;}}
+async function apiDel(p){try{const b=document.getElementById('apiUrl').value.replace(/\/$/,'');const r=await fetch(b+p,{method:'DELETE'});return await r.json();}catch{return null;}}
+function logMsg(m, isRealtime=false){const el=document.getElementById('log');const t=new Date().toLocaleTimeString('th-TH');const prefix=isRealtime?'⚡':' ';el.innerHTML=`<div>[${t}] ${prefix} ${m}</div>`+el.innerHTML;if(Notification&&Notification.permission==='granted'){new Notification('GEM Boss Realtime',{body:m});}if(document.getElementById('sound').checked){try{const a=new (AudioContext||webkitAudioContext)();const o=a.createOscillator();o.connect(a.destination);o.frequency.value=isRealtime?1200:880;o.start();setTimeout(()=>o.stop(),250);}catch{}}}
+
+function connectWS(){
+  const baseUrl = document.getElementById('apiUrl').value.replace(/\/$/,'').replace('http://','ws://').replace('https://','wss://');
+  const wsUrl = baseUrl + '/ws';
+  document.getElementById('wsStatus').innerHTML='<span class="dot dot-yellow"></span> กำลังเชื่อมต่อ...';
+  try{
+    ws = new WebSocket(wsUrl);
+    ws.onopen = ()=>{
+      document.getElementById('wsStatus').innerHTML='<span class="dot dot-green"></span> Realtime เชื่อมต่อแล้ว';
+      document.getElementById('status').textContent='🟢 Realtime LIVE';
+      logMsg('🔗 เชื่อมต่อ Realtime สำเร็จ - Discord ↔ Web Sync อัตโนมัติ', true);
+      // ping every 30s
+      setInterval(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'ping'}));},30000);
+    };
+    ws.onmessage = (ev)=>{
+      try{
+        const msg = JSON.parse(ev.data);
+        if(msg.type==='init'){
+          if(msg.bosses){BOSSES=msg.bosses; logMsg(`📥 โหลดบอส ${BOSSES.length} ตัวจากบอท (Realtime)`, true);}
+          if(msg.timers){timers=msg.timers; save(); logMsg(`📥 โหลดเวลา ${Object.keys(timers).length} รายการจากบอท`, true);}
+          render(); renderTable();
+        }else if(msg.type==='timers'){
+          timers=msg.data; save();
+          logMsg(`⚡ อัปเดตเวลาเกิดบอสจาก Discord แบบ Realtime`, true);
+          render(); renderTable();
+        }else if(msg.type==='bosses'){
+          BOSSES=msg.data;
+          logMsg(`⚡ อัปเดตรายการบอส ${BOSSES.length} ตัวจาก Discord แบบ Realtime`, true);
+          render(); renderTable();
+        }
+      }catch(e){console.error(e);}
+    };
+    ws.onclose = ()=>{
+      document.getElementById('wsStatus').innerHTML='<span class="dot dot-red"></span> หลุด - กำลังเชื่อมใหม่...';
+      document.getElementById('status').textContent='🔴 Reconnect...';
+      logMsg('🔌 Realtime หลุด กำลังเชื่อมใหม่ใน 3 วิ...');
+      clearTimeout(wsReconnectTimer);
+      wsReconnectTimer = setTimeout(connectWS, 3000);
+    };
+    ws.onerror = ()=>{
+      document.getElementById('wsStatus').innerHTML='<span class="dot dot-red"></span> Error';
+    };
+  }catch(e){
+    document.getElementById('wsStatus').innerHTML='<span class="dot dot-red"></span> ต่อไม่ได้';
+  }
+}
+
+function getState(b){const now=nowTH();if(b.fixed_times&&b.fixed_times.length>0){let up=[];b.fixed_times.forEach(t=>{const [h,m]=t.split(':').map(Number);const d=new Date(now);d.setHours(h,m,0,0);if(d>now)up.push({time:t,dt:d});});if(up.length===0){const [h,m]=b.fixed_times[0].split(':').map(Number);const d=new Date(now);d.setDate(d.getDate()+1);d.setHours(h,m,0,0);up.push({time:b.fixed_times[0],dt:d,tomorrow:true});}if(up.length>0){const diff=(up[0].dt-now)/60000;return {status:diff<=10?'soon':'fixed',diff,next:up[0]};}}else{const t=timers[b.id];if(!t||!t.next_spawn)return {status:'dead'};const ns=new Date(t.next_spawn);const diff=(ns-now)/60000;if(diff<=0)return {status:'alive',diff,next:ns};if(diff<=10)return {status:'soon',diff,next:ns};return {status:'waiting',diff,next:ns};}return {status:'dead'};}
+function switchTab(t){document.getElementById('tab-tracker-content').classList.toggle('hidden',t!=='tracker');document.getElementById('tab-list-content').classList.toggle('hidden',t!=='list');document.getElementById('tab-tracker').className=t==='tracker'?'px-4 py-2 bg-indigo-600 rounded text-sm':'px-4 py-2 bg-gray-800 rounded text-sm';document.getElementById('tab-list').className=t==='list'?'px-4 py-2 bg-indigo-600 rounded text-sm':'px-4 py-2 bg-gray-800 rounded text-sm';if(t==='list')renderTable();}
+function render(){const grid=document.getElementById('grid');grid.innerHTML='';["Reboldoeux","The Port of Coimbra","City of Auch","World Boss - ทุกเมือง"].forEach(city=>{const list=BOSSES.filter(b=>b.city.includes(city)||(city.includes('World')&&b.city.includes('World')));if(!list.length)return;const sec=document.createElement('div');sec.innerHTML=`<h2 class='text-lg font-bold text-indigo-300 mb-2'>🏰 ${city} (${list.length})</h2><div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3' id='g-${city}'></div>`;grid.appendChild(sec);const cont=sec.querySelector(`#g-${city}`);list.forEach(b=>{const st=getState(b);let txt='ยังไม่มีเวลา';let badge='ยังไม่ตั้ง';let cls='';if(st.status==='soon'){const m=Math.floor(Math.max(0,st.diff));const s=Math.floor((st.diff*60)%60);txt=`อีก ${m} นาที ${s} วิ`;badge='⏰ ใกล้เกิด';cls='soon critical';}else if(st.status==='alive'){txt='🔥 เกิดแล้ว!';badge='เกิดแล้ว';cls='alive';}else if(st.status==='waiting'){const m=Math.floor(st.diff);txt=`อีก ${m} นาที`;badge='รอเกิด';}else if(st.status==='fixed'){txt=`${st.next.time} น. (อีก ${Math.floor(st.diff)} นาที)`;badge='เวลาตายตัว';}let nextStr='';if(st.next instanceof Date)nextStr=st.next.toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok'});else if(st.next&&st.next.dt)nextStr=st.next.dt.toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok'});else if(st.next)nextStr=st.next.time;const card=document.createElement('div');card.className=`card p-3 ${cls}`;card.innerHTML=`<div class='flex justify-between'><div><div class='font-bold text-sm'>${b.name_th}</div><div class='text-xs text-gray-400'>${b.name_en} | ${b.map}</div></div><span class='text-xs bg-gray-800 px-2 py-1 rounded'>${badge}</span></div><div class='bg-gray-900 rounded p-2 mt-2 font-mono text-xs'>${txt}<div class='text-xs text-gray-400'>${nextStr?`เกิด: ${nextStr}`:''}</div></div><div class='grid grid-cols-2 gap-1 mt-2'><button onclick="kill('${b.id}')" class='bg-red-700 py-1 rounded text-xs'>💀 Kill</button><button onclick="openTimeModal('${b.id}')" class='bg-blue-700 py-1 rounded text-xs'>⏰ ตั้งเวลา</button><button onclick="openEdit('${b.id}')" class='bg-yellow-700 py-1 rounded text-xs'>✏️ แก้ไข</button><button onclick="reset('${b.id}')" class='bg-gray-700 py-1 rounded text-xs'>♻️ Reset</button></div>`;cont.appendChild(card);});});const all=[];BOSSES.forEach(b=>{const s=getState(b);if(s.next){const dt=s.next instanceof Date?s.next:s.next.dt;if(dt)all.push({b,dt,diff:s.diff});}});all.sort((a,b)=>a.dt-b.dt);const n5=document.getElementById('next5');if(all.length){n5.innerHTML=`<b>⏳ 5 ตัวถัดไป:</b> `+all.slice(0,5).map(u=>`${u.b.name_th} ${u.dt.toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok'})}`).join(' | ');}else{n5.innerHTML='ยังไม่มีเวลา - กด Kill เพื่อเริ่มนับ';}document.getElementById('totalBoss').textContent=BOSSES.length;}
+function renderTable(){const tbody=document.getElementById('bossTable');const q=document.getElementById('searchBoss').value.toLowerCase();tbody.innerHTML='';BOSSES.filter(b=> !q || `${b.name_th} ${b.name_en} ${b.map} ${b.city}`.toLowerCase().includes(q)).forEach(b=>{const tr=document.createElement('tr');tr.className='border-b border-gray-800 hover:bg-gray-800';tr.innerHTML=`<td class='p-2'><div class='font-bold'>${b.name_th}</div><div class='text-gray-400'>${b.name_en}</div><div class='text-xs text-gray-500'>ID: ${b.id}</div></td><td class='p-2'><div>${b.city}</div><div class='text-gray-400'>${b.map}</div></td><td class='p-2'>${b.respawn_min>0?b.respawn_min+' นาที':'เวลาตายตัว'}<div class='text-gray-400'>${b.fixed_times?b.fixed_times.join(', '):''}</div></td><td class='p-2 text-xs'>${getTimeStr(b)}</td><td class='p-2'><div class='flex flex-wrap gap-1'><button onclick="openEdit('${b.id}')" class='px-2 py-1 bg-yellow-700 rounded text-xs'>✏️</button><button onclick="openTimeModal('${b.id}')" class='px-2 py-1 bg-blue-700 rounded text-xs'>⏰</button><button onclick="reset('${b.id}')" class='px-2 py-1 bg-gray-700 rounded text-xs'>♻️</button><button onclick="delBoss('${b.id}')" class='px-2 py-1 bg-red-700 rounded text-xs'>🗑️</button></div></td>`;tbody.appendChild(tr);});}
+function getTimeStr(b){const st=getState(b);if(st.next instanceof Date)return st.next.toLocaleString('th-TH',{timeZone:'Asia/Bangkok'});if(st.next&&st.next.dt)return st.next.dt.toLocaleString('th-TH',{timeZone:'Asia/Bangkok'});if(st.next)return st.next.time;return '-';}
+function openEdit(id){const b=BOSSES.find(x=>x.id===id);if(!b)return;currentEditId=id;document.getElementById('modalTitle').textContent='✏️ แก้ไขบอส (Realtime)';document.getElementById('m_id').value=b.id;document.getElementById('m_id').disabled=true;document.getElementById('m_th').value=b.name_th;document.getElementById('m_en').value=b.name_en;document.getElementById('m_city').value=b.city;document.getElementById('m_type').value=b.type;document.getElementById('m_map').value=b.map;document.getElementById('m_respawn').value=b.respawn_min;document.getElementById('m_fixed').value=b.fixed_times?b.fixed_times.join(','):'';document.getElementById('modal').classList.remove('hidden');document.getElementById('modal').classList.add('flex');}
+function openAdd(){currentEditId=null;document.getElementById('modalTitle').textContent='➕ เพิ่มบอสใหม่ (Realtime)';document.getElementById('m_id').value='';document.getElementById('m_id').disabled=false;document.getElementById('m_th').value='';document.getElementById('m_en').value='';document.getElementById('m_city').value='Reboldoeux';document.getElementById('m_type').value='Field Boss';document.getElementById('m_map').value='';document.getElementById('m_respawn').value=120;document.getElementById('m_fixed').value='';document.getElementById('modal').classList.remove('hidden');document.getElementById('modal').classList.add('flex');}
+function closeModal(){document.getElementById('modal').classList.add('hidden');}
+function openTimeModal(id){currentTimeId=id;const b=BOSSES.find(x=>x.id===id);document.getElementById('timeBossName').textContent=b?`${b.name_th} (${b.name_en})`:id;const now=new Date();now.setMinutes(now.getMinutes()+ (b?b.respawn_min:120));const local = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('setTimeInput').value=local;document.getElementById('modalTime').classList.remove('hidden');document.getElementById('modalTime').classList.add('flex');}
+function closeTimeModal(){document.getElementById('modalTime').classList.add('hidden');}
+function setQuickTime(min){const input=document.getElementById('setTimeInput');const d=new Date(input.value);d.setMinutes(d.getMinutes()+min);input.value=new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+
+async function saveBoss(){
+const id=document.getElementById('m_id').value.trim().toLowerCase().replace(/\s+/g,'_');
+const data={id:id||'boss_'+Date.now(), name_th:document.getElementById('m_th').value, name_en:document.getElementById('m_en').value, city:document.getElementById('m_city').value, type:document.getElementById('m_type').value, map:document.getElementById('m_map').value, respawn_min:parseInt(document.getElementById('m_respawn').value)||0, fixed_times:document.getElementById('m_fixed').value.split(',').map(s=>s.trim()).filter(s=>s)};
+if(!data.name_th||!data.name_en){alert('ใส่ชื่อบอสด้วย');return;}
+if(currentEditId){const res=await apiPut(`/api/bosses/${currentEditId}`,data);if(res&&res.ok){BOSSES=BOSSES.map(b=>b.id===currentEditId?data:b);logMsg(`✏️ แก้ไข ${data.name_th} แล้ว + Sync Realtime`, true);}else{BOSSES=BOSSES.map(b=>b.id===currentEditId?data:b); logMsg(`✏️ แก้ไข ${data.name_th} (Local)`, true);}}else{const res=await apiPost('/api/bosses',data);if(res&&res.ok){BOSSES.push(data);logMsg(`➕ เพิ่มบอส ${data.name_th} แล้ว + Sync Realtime`, true);}else{BOSSES.push(data);logMsg(`➕ เพิ่มบอส ${data.name_th} (Local)`, true);}}
+closeModal();render();renderTable();}
+
+async function delBoss(id){if(!confirm(`ลบบอส ${id} ?`))return;const res=await apiDel(`/api/bosses/${id}`);BOSSES=BOSSES.filter(b=>b.id!==id);delete timers[id];save();logMsg(`🗑️ ลบ ${id} แล้ว + Sync Realtime`, true);render();renderTable();}
+async function kill(id){const boss=BOSSES.find(b=>b.id===id);const now=new Date();const next=new Date(now.getTime()+boss.respawn_min*60000);timers[id]={last_killed:now.toISOString(),next_spawn:next.toISOString(),notified_10m:false,notified_spawn:false};save();const r=await apiPost('/api/kill',{id});logMsg(`💀 Kill ${boss.name_th} -> ${next.toLocaleTimeString('th-TH')} (Realtime Sync)`, true);render();}
+async function reset(id){if(id==='all'){if(!confirm('Reset ทั้งหมด?'))return;timers={};save();await apiPost('/api/reset',{id:'all'});logMsg('♻️ Reset ทั้งหมด + Sync Realtime', true);}else{delete timers[id];save();await apiPost('/api/reset',{id});logMsg(`♻️ Reset ${id} + Sync Realtime`, true);}render();}
+async function saveTime(){const val=document.getElementById('setTimeInput').value;if(!val){alert('เลือกเวลาด้วย');return;}const dt=new Date(val);const res=await apiPost('/api/settime',{id:currentTimeId,next_spawn:dt.toISOString()});timers[currentTimeId]={last_killed:new Date().toISOString(),next_spawn:dt.toISOString(),notified_10m:false,notified_spawn:false};save();logMsg(`⏰ ตั้งเวลา ${currentTimeId} เป็น ${dt.toLocaleString('th-TH')} + Sync Realtime`, true);closeTimeModal();render();}
+
+document.getElementById('addBossBtn').onclick=openAdd;
+document.getElementById('saveBoss').onclick=saveBoss;
+document.getElementById('saveTime').onclick=saveTime;
+document.getElementById('notifBtn').onclick=async()=>{const p=await Notification.requestPermission();if(p==='granted')logMsg('✅ เปิดแจ้งเตือนเว็บแล้ว');};
+document.getElementById('resetAll').onclick=()=>reset('all');
+document.getElementById('searchBoss').oninput=renderTable;
+
+async function init(){
+  load();
+  // try load bosses from API first
+  const b=await apiGet('/api/bosses');
+  if(b&&b.length>0){BOSSES=b;}
+  connectWS();
+  render();
+  setInterval(()=>{document.getElementById('liveTime').textContent='🕐 '+new Date().toLocaleString('th-TH',{timeZone:'Asia/Bangkok'});BOSSES.forEach(b=>{const s=getState(b);if(s.status==='soon'&&Math.floor(s.diff)===10&&!timers[b.id]?.notified_10m){logMsg(`⏰ ${b.name_th} จะเกิดใน 10 นาที`, true);if(timers[b.id])timers[b.id].notified_10m=true;save();}if(s.status==='alive'&&!timers[b.id]?.notified_spawn){logMsg(`🔥 ${b.name_th} เกิดแล้ว!`, true);if(timers[b.id])timers[b.id].notified_spawn=true;save();}});render();},1000);
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+[
+  {
+    "id": "dilos_latem",
+    "name_th": "ดิลอส ลาเท็ม",
+    "name_en": "Dilos Latem",
+    "city": "Reboldoeux",
+    "map": "Al Quelt Moreza (Dungeon) ชั้น 7-17 / ห้องบอสลับ",
+    "type": "Dungeon Boss",
+    "respawn_min": 120,
+    "fixed_times": []
+  },
+  {
+    "id": "hill_giant",
+    "name_th": "ฮิลล์ ไจแอนท์",
+    "name_en": "Hill Giant",
+    "city": "Reboldoeux",
+    "map": "Rion Prairie / Ferruccio Junction / จุดวาร์ปกลางทุ่ง",
+    "type": "Field Boss",
+    "respawn_min": 120,
+    "fixed_times": []
+  },
+  {
+    "id": "nest_head_giant",
+    "name_th": "เนสท์-เฮด ไจแอนท์",
+    "name_en": "Nest-Head Giant",
+    "city": "Reboldoeux",
+    "map": "Rion Prairie เหนือ / Forest of Chery / ริมผา",
+    "type": "Field Boss Lv.30",
+    "respawn_min": 180,
+    "fixed_times": []
+  },
+  {
+    "id": "queen_goblin",
+    "name_th": "ควีน ก็อบลิน",
+    "name_en": "Queen Goblin",
+    "city": "Reboldoeux",
+    "map": "Al Quelt Moreza ทางออก / ชายป่า Reboldoeux",
+    "type": "Field Boss Lv.25",
+    "respawn_min": 90,
+    "fixed_times": []
+  },
+  {
+    "id": "pappus_alpha",
+    "name_th": "ปาปัส อัลฟ่า",
+    "name_en": "Pappus Alpha",
+    "city": "Reboldoeux",
+    "map": "Ferruccio Underground / Ferruccio Factory",
+    "type": "Field Boss Lv.35",
+    "respawn_min": 150,
+    "fixed_times": []
+  },
+  {
+    "id": "treasure_golem",
+    "name_th": "เทรเชอร์ โกเล็ม",
+    "name_en": "Treasure Golem",
+    "city": "The Port of Coimbra",
+    "map": "Tetra Ruins / Secret Tetra ชั้น 24-34 / ห้องสมบัติ",
+    "type": "Dungeon Boss",
+    "respawn_min": 180,
+    "fixed_times": []
+  },
+  {
+    "id": "kraken",
+    "name_th": "คราเคน ยักษ์",
+    "name_en": "Kraken",
+    "city": "The Port of Coimbra",
+    "map": "Tetra Coast / ชายฝั่ง Coimbra / ท่าเรือร้าง",
+    "type": "Field Boss Lv.45",
+    "respawn_min": 180,
+    "fixed_times": []
+  },
+  {
+    "id": "tetra_commander",
+    "name_th": "เตตร้า คอมมานเดอร์",
+    "name_en": "Tetra Commander",
+    "city": "The Port of Coimbra",
+    "map": "Tetra Ruins Entrance / ทางเข้า Tetra",
+    "type": "Field Boss Lv.40",
+    "respawn_min": 150,
+    "fixed_times": []
+  },
+  {
+    "id": "naga_queen",
+    "name_th": "นากา ควีน",
+    "name_en": "Naga Queen",
+    "city": "The Port of Coimbra",
+    "map": "Tetra Underground Lake / บ่อน้ำใต้ดิน Tetra",
+    "type": "Field Boss Lv.42",
+    "respawn_min": 120,
+    "fixed_times": []
+  },
+  {
+    "id": "giant_crab",
+    "name_th": "ไจแอนท์ แครบ",
+    "name_en": "Giant Crab",
+    "city": "The Port of Coimbra",
+    "map": "Coimbra Beach / ชายหาด Coimbra",
+    "type": "Field Boss Lv.38",
+    "respawn_min": 90,
+    "fixed_times": []
+  },
+  {
+    "id": "chimera",
+    "name_th": "ไคเมร่า",
+    "name_en": "Chimera",
+    "city": "City of Auch",
+    "map": "Chaos Chimera Dungeon / ดันเจี้ยนไคเมร่า",
+    "type": "Dungeon Boss",
+    "respawn_min": 240,
+    "fixed_times": []
+  },
+  {
+    "id": "dr_torsche",
+    "name_th": "ดร.ทอร์เช่",
+    "name_en": "Dr. Torsche",
+    "city": "City of Auch",
+    "map": "Dr. Torsche's Mansion / Savage Garden / คฤหาสน์ทอร์เช่",
+    "type": "Dungeon Boss",
+    "respawn_min": 240,
+    "fixed_times": []
+  },
+  {
+    "id": "big_cockatrice",
+    "name_th": "บิ๊ก ค็อกคาไทรซ์",
+    "name_en": "Big Cockatrice",
+    "city": "City of Auch",
+    "map": "El Lago de Tres Hermanas / El Tejado Verde / ริมทะเลสาบ",
+    "type": "Field Boss Lv.69",
+    "respawn_min": 180,
+    "fixed_times": []
+  },
+  {
+    "id": "captain_scharf",
+    "name_th": "กัปตัน ชาร์ฟเฟนเบอร์เกอร์",
+    "name_en": "Captain Scharffenberger",
+    "city": "City of Auch",
+    "map": "El Tejado Verde / จุดชมวิว Auch / ยอดเขา",
+    "type": "Field Boss Lv.69",
+    "respawn_min": 180,
+    "fixed_times": []
+  },
+  {
+    "id": "merman_chief",
+    "name_th": "เมอร์แมน ชีฟเทน",
+    "name_en": "Merman Chieftain",
+    "city": "City of Auch",
+    "map": "Thueringen Lakeside / El Lago ฝั่งตะวันตก",
+    "type": "Field Boss Lv.63",
+    "respawn_min": 120,
+    "fixed_times": []
+  },
+  {
+    "id": "stone_cortes",
+    "name_th": "สโตน คอร์เทส",
+    "name_en": "Stone Cortes",
+    "city": "City of Auch",
+    "map": "Clock Tower 2nd Floor / หอนาฬิกาชั้น 2 (แมพใหม่ Byron)",
+    "type": "Field Boss Lv.75",
+    "respawn_min": 240,
+    "fixed_times": []
+  },
+  {
+    "id": "pirate_king_el_lago",
+    "name_th": "ไพเรทคิง แห่งเอล ลาโก",
+    "name_en": "Pirate King of El Lago",
+    "city": "City of Auch",
+    "map": "El Lago de Tres Hermanas กลางทะเลสาบ / เกาะโจรสลัด",
+    "type": "Field Boss Lv.65",
+    "respawn_min": 180,
+    "fixed_times": []
+  },
+  {
+    "id": "chaos_cub",
+    "name_th": "เคออส คับ",
+    "name_en": "Chaos Cub",
+    "city": "City of Auch",
+    "map": "El Tejado Verde Depths / ถ้ำลึก Auch / ป่า Chaos",
+    "type": "Field Boss Lv.70",
+    "respawn_min": 210,
+    "fixed_times": []
+  },
+  {
+    "id": "witch_bondage",
+    "name_th": "วิทช์ ออฟ บอนเดจ",
+    "name_en": "Witch of Bondage",
+    "city": "World Boss - ทุกเมือง",
+    "map": "World Boss Arena / ลานบอสโลก (วาร์ปจากทุกเมือง)",
+    "type": "World Boss",
+    "respawn_min": 0,
+    "fixed_times": [
+      "12:00",
+      "19:30",
+      "22:00"
+    ]
+  }
+]
